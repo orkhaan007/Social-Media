@@ -1,25 +1,47 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using SocialNetwok.WebUI.Models;
+using SocialMedia.Entities.Models;
+using SocialMedia.WebUI.Models;
 using System.Diagnostics;
 
-namespace SociaalMedia.WebUI.Controllers
+namespace SocialMedia.WebUI.Controllers
 {
+    [Authorize]
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly UserManager<CustomIdentityUser> _userManager;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, UserManager<CustomIdentityUser> userManager)
         {
             _logger = logger;
+            _userManager = userManager;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
+        {
+            var user = await _userManager.GetUserAsync(HttpContext.User);
+            ViewBag.User = user;
+            return View();
+        }
+
+        public IActionResult Privacy()
         {
             return View();
         }
 
-        public IActionResult Notification() { return View(); }
-        public IActionResult Profile() { return View(); }
+
+        public IActionResult Notification()
+        {
+            return View();
+        }
+
+        public IActionResult Profile()
+        {
+            return View();
+        }
+
         public IActionResult Messages() { return View(); }
         public IActionResult Friends() { return View(); }
         public IActionResult Events() { return View(); }

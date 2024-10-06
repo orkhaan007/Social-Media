@@ -1,4 +1,4 @@
-namespace SocialNetwok.WebUI.Models
+namespace SocialMedia.WebUI.Models
 {
     public class ErrorViewModel
     {
