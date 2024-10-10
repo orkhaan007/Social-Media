@@ -3,7 +3,6 @@
     Layout = "_AccountLayout";
 }
 
-
     <div class="profile-authentication-area">
         <div class="container">
             <div class="row">
@@ -52,6 +51,11 @@
                             <span asp-validation-for="City"></span>
                         </div>
 
+                        <div class="form-group">
+                            <label for="ProfileImage">Profile Image</label>
+                            <input type="file" asp-for="ProfileImage" class="form-control">
+                        </div>
+
                             <div class="form-group">
                                 <label>Confirm Password</label>
                                 <input type="password" class="form-control">
@@ -78,4 +82,3 @@
             <a href="index.html"><i class="flaticon-home"></i></a>
         </div>
     </div>
-

@@ -1,6 +1,9 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SocialMedia.Business.Abstrats;
+using SocialMedia.Business.Concretes;
 using SocialMedia.Entities.Models;
 using SocialMedia.WebUI.Models;
 using System.Diagnostics;
@@ -12,11 +15,13 @@ namespace SocialMedia.WebUI.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly UserManager<CustomIdentityUser> _userManager;
+        private readonly IUserService _userService;
 
-        public HomeController(ILogger<HomeController> logger, UserManager<CustomIdentityUser> userManager)
+        public HomeController(ILogger<HomeController> logger, UserManager<CustomIdentityUser> userManager, IUserService userService)
         {
             _logger = logger;
             _userManager = userManager;
+            _userService = userService;
         }
 
         public async Task<IActionResult> Index()

@@ -14,5 +14,6 @@ namespace SocialMedia.WebUI.Models
         public string? Password { get; set; }
         [Required]
         public string? City{ get; set; }
+        public IFormFile? ProfileImage { get; set; }
     }
 }

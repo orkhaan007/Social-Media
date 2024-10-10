@@ -12,14 +12,16 @@ namespace SocialMedia.WebUI.Controllers
         private readonly UserManager<CustomIdentityUser> _userManager;
         private readonly RoleManager<CustomIdentityRole> _roleManager;
         private readonly SignInManager<CustomIdentityUser> _signInManager;
-        private readonly SocialMediaDBContext _context;
+        private readonly IUserService _userService;
+        private readonly IImageService _imageService;
 
-        public AccountController(UserManager<CustomIdentityUser> userManager, RoleManager<CustomIdentityRole> roleManager, SignInManager<CustomIdentityUser> signInManager, SocialMediaDBContext context)
+        public AccountController(UserManager<CustomIdentityUser> userManager, RoleManager<CustomIdentityRole> roleManager, SignInManager<CustomIdentityUser> signInManager, IUserService userService, IImageService imageService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _signInManager = signInManager;
-            _context = context;
+            _userService = userService;
+            _imageService = imageService;
         }
 
         public IActionResult Register()
@@ -33,7 +35,6 @@ namespace SocialMedia.WebUI.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (ModelState.IsValid)
@@ -41,10 +42,9 @@ namespace SocialMedia.WebUI.Controllers
                 var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberMe, false);
                 if (result.Succeeded)
                 {
-                    var user = _context.Users.SingleOrDefault(u => u.UserName == model.Username);
+                    var user = await _userService.GetAsync(u => u.UserName == model.Username);
                     user.isOnline = true;
-                    _context.Users.Update(user);
-                    await _context.SaveChangesAsync();
+                    await _userService.UpdateAsync(user);
                 }
                 return RedirectToAction("Index", "Home");
             }
@@ -53,8 +53,23 @@ namespace SocialMedia.WebUI.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> Logout()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+            {
+                user.isOnline = false;
+                user.DisconnectTime = DateTime.Now;
+                await _userService.UpdateAsync(user);
+            }
+
+            await _signInManager.SignOutAsync();
+            return RedirectToAction("Login", "Account");
+        }
+
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(RegisterViewModel model)
+        public async Task<IActionResult> Register(RegisterViewModel model, IFormFile profileImage)
         {
             if (ModelState.IsValid)
             {
@@ -62,21 +77,39 @@ namespace SocialMedia.WebUI.Controllers
                 {
                     UserName = model.Username,
                     Email = model.Email,
-                    City=model.City,
+                    City = model.City,
+                    isOnline = true,
+                    ConnectTime = DateTime.Now.ToString(),
                 };
+
+                if (profileImage != null)
+                {
+                    var imageUrl = await _imageService.SaveFile(profileImage, "profile_images");
+                    user.ImageUrl = imageUrl;
+                }
+
                 IdentityResult result = await _userManager.CreateAsync(user, model.Password);
                 if (result.Succeeded)
                 {
-                    CustomIdentityRole role = new CustomIdentityRole
+                    if (!await _roleManager.RoleExistsAsync("User"))
                     {
-                        Name = "User"
-                    };
-                    IdentityResult roleResult = await _roleManager.CreateAsync(role);
-                    if (!roleResult.Succeeded) { ModelState.AddModelError("", "We couldn't assign you a role!"); }
+                        CustomIdentityRole role = new CustomIdentityRole
+                        {
+                            Name = "User"
+                        };
+                        IdentityResult roleResult = await _roleManager.CreateAsync(role);
+                        if (!roleResult.Succeeded)
+                        {
+                            ModelState.AddModelError("", "We couldn't create the role.");
+                            return View(model);
+                        }
+                    }
 
+                    await _userManager.AddToRoleAsync(user, "User");
+                    return RedirectToAction("Login", "Account");
                 }
-                await _userManager.AddToRoleAsync(user, "User");
-                return RedirectToAction("Login", "Account");
+
+                ModelState.AddModelError("", "Failed to register user.");
             }
             return View(model);
         }
